@@ -17,7 +17,7 @@ def validators_url(url: str):
     :param url:
     :return:
     """
-    if url is not str:
+    if not isinstance(url, str):
         return False
 
     status = validators.url(url)
@@ -25,5 +25,5 @@ def validators_url(url: str):
 
 
 if __name__ == '__main__':
-    url = '2https://www.52pojie.cn/'
+    url = 'https://www.github.com/dp24678/WebPageCatcher'
     print(validators_url(url=url))

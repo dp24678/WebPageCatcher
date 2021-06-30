@@ -118,7 +118,6 @@ async def runBrowser(url, path_dict, ua=None, need_proxy=None):
     await page.close()
     # await browser.close()
     end_time = time.time()
-    time.sleep(50)
     print('耗时：%s' % (end_time - start_time))
 
 
@@ -206,12 +205,14 @@ def get_screenshot():
     网页截屏
     :return:
     """
+    statrt_time = time.time()
     url = request.args.get("url")
-    print('获取到的url：', url)
+    print('获取到的url：', url, '校验结果：', validators_url(url))
     if not validators_url(url):
         return jsonify({'msg': '请传入正确的url'})
     local_img_path = screenshot(url)['local_img_path']
-    return jsonify({'local_img_path': local_img_path})
+    end_time = time.time()
+    return jsonify({'local_img_path': local_img_path, 'consuming_time': round(end_time - statrt_time, 2)})
 
 
 @blueprint.route("/pdf", methods=["GET", "POST"])
