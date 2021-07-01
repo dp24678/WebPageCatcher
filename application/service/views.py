@@ -2,6 +2,7 @@
 """pyppeteer 操作 访问浏览器"""
 import asyncio
 import hashlib
+import os
 import time
 import validators
 from flask import (
@@ -11,7 +12,9 @@ from flask import (
     redirect,
     render_template,
     request,
-    url_for, jsonify,
+    url_for,
+    jsonify,
+    send_from_directory,
 )
 # from flask_login import login_required, login_user, logout_user
 from pyppeteer import launch, launcher
@@ -205,14 +208,28 @@ def get_screenshot():
     网页截屏
     :return:
     """
+    # dirpath = os.path.join(current_app.root_path, 'temporay_files')
+    dirpath = os.path.join(os.path.abspath(os.path.join(current_app.root_path, "..")), 'temporary_files')
+    print(dirpath)
     statrt_time = time.time()
     url = request.args.get("url")
     print('获取到的url：', url, '校验结果：', validators_url(url))
     if not validators_url(url):
         return jsonify({'msg': '请传入正确的url'})
-    local_img_path = screenshot(url)['local_img_path']
+    # local_img_path = screenshot(url)['local_img_path']
     end_time = time.time()
-    return jsonify({'local_img_path': local_img_path, 'consuming_time': round(end_time - statrt_time, 2)})
+    # return jsonify({'local_img_path': local_img_path, 'consuming_time': round(end_time - statrt_time, 2)})
+    # return jsonify({'local_img_path': 43, 'consuming_time': round(end_time - statrt_time, 2)})
+    # return send_from_directory('./', 'a')
+    print('准备传递文件')
+    return send_from_directory(dirpath, 'a.png',as_attachment=True)
+    # return send_from_directory('../../../temporay_files', '58395ada196e86ed42909d75b290bd8f.png')
+    # try:
+    #     # return send_from_directory('../../../temporay_files', '58395ada196e86ed42909d75b290bd8f.png')
+    #     return send_from_directory('./', 'a')
+    # except Exception as e:
+    #     print(e)
+    #     return str(e)
 
 
 @blueprint.route("/pdf", methods=["GET", "POST"])
