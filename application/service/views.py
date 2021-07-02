@@ -222,14 +222,11 @@ def get_screenshot():
     # return jsonify({'local_img_path': 43, 'consuming_time': round(end_time - statrt_time, 2)})
     # return send_from_directory('./', 'a')
     print('准备传递文件')
-    return send_from_directory(dirpath, 'a.png',as_attachment=True)
-    # return send_from_directory('../../../temporay_files', '58395ada196e86ed42909d75b290bd8f.png')
-    # try:
-    #     # return send_from_directory('../../../temporay_files', '58395ada196e86ed42909d75b290bd8f.png')
-    #     return send_from_directory('./', 'a')
-    # except Exception as e:
-    #     print(e)
-    #     return str(e)
+    try:
+        return send_from_directory(dirpath, 'a.png', as_attachment=True)  # , as_attachment=True  # 是否作为附件传输，否是直接显示在屏幕上
+    except Exception as e:
+        print(e)
+        return str(e)
 
 
 @blueprint.route("/pdf", methods=["GET", "POST"])
@@ -238,9 +235,15 @@ def get_pdf():
     网页转pdf
     :return:
     """
+    dirpath = os.path.join(os.path.abspath(os.path.join(current_app.root_path, "..")), 'temporary_files')
     url = request.args.get("url")
     print('获取到的url：', url)
     if validators_url(url):
         return jsonify({'msg': '请传入正确的url'})
     local_img_path = screenshot(url)['local_img_path']
-    return jsonify({'local_img_path': local_img_path})
+    # return jsonify({'local_img_path': local_img_path})
+    try:
+        return send_from_directory(dirpath, 'a.png', as_attachment=True)  # , as_attachment=True  # 是否作为附件传输，否是直接显示在屏幕上
+    except Exception as e:
+        print(e)
+        return str(e)
