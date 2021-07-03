@@ -20,6 +20,7 @@ from flask import (
 from pyppeteer import launch, launcher
 from application.settings import proxyUser, proxyPass, args_launch, proxyServer, TEMPORARY_FILES_PATH
 from application.utils.utils import validators_url
+from config import SCREENSHOT_FILE_TYPES
 
 WSE_DICT = {}  # 存储browserWSEndpoint
 # 创建蓝图
@@ -37,7 +38,7 @@ async def intercept_request(req):
         await req.continue_()
 
 
-async def runBrowser(url, path_dict, ua=None, need_proxy=None):
+async def runBrowser(url, out_info_dict, ua=None, need_proxy=None):
     print('runBrowser 函数')
     start_time = time.time()
     if len(WSE_DICT) == 0:
@@ -96,27 +97,27 @@ async def runBrowser(url, path_dict, ua=None, need_proxy=None):
     except Exception as e:
         content = '浏览器获取网页源码时异常： %s' % e
 
-    # 获取截图  fullPage=True：获取整个网页的截图（滚动到底部）
-    url_md5 = hashlib.md5(url.encode()).hexdigest()
-    # screenshot_path = './screenshots/%s.png' % url_md5
-    screenshot_path = TEMPORARY_FILES_PATH + url_md5 + '.' + 'png'
-    await page.screenshot(path=screenshot_path, fullPage=True)
-    path_dict['local_img_path'] = screenshot_path
-    print('截图 ok')
-    # 获取网页转成pdf
-    await page.emulateMedia('screen')
-    pdf_path = TEMPORARY_FILES_PATH + url_md5 + '.' + 'pdf'
-    await page.pdf({'path': pdf_path,
-                    'printBackground': True,
-                    'displayHeaderFooter': True,
-                    'landscape': True  # 关键 可以将某些图标渲染出来（个人理解为是否渲染网页背景）
-                    # 'margin': {'top': '1in',
-                    #            'right': '1in',
-                    #            'bottom': '1in',
-                    #            'left': '1in'}
-                    })
-    path_dict['local_pdf_path'] = pdf_path
-    print('导出 ok')
+    out_file_path = out_info_dict['out_file_path']
+    out_file_type = out_info_dict['out_file_type']
+    if out_file_type == 'pdf':
+        # 获取网页转成pdf
+        await page.emulateMedia('screen')
+        await page.pdf({'path': out_file_path,
+                        'printBackground': True,
+                        'displayHeaderFooter': True,
+                        'landscape': True  # 关键 可以将某些图标渲染出来（个人理解为是否渲染网页背景）
+                        # 'margin': {'top': '1in',
+                        #            'right': '1in',
+                        #            'bottom': '1in',
+                        #            'left': '1in'}
+                        })
+        print('pdf导出 ok')
+
+    elif out_file_type in SCREENSHOT_FILE_TYPES:
+        # 获取截图  fullPage=True：获取整个网页的截图（滚动到底部）
+        await page.screenshot(path=out_file_path, fullPage=True)
+        print('截图 ok')
+
     # await asyncio.sleep(50)
     await page.close()
     # await browser.close()
@@ -136,11 +137,18 @@ def get_html(host, ua, need_proxy):
     return html_content_dict
 
 
-def screenshot(url):
-    print('screenshot 函数')
-    path_dict = {}
-    asyncio.run(runBrowser(url, path_dict))
-    return path_dict
+def get_file(url, out_file_type):
+    print('get_file 函数')
+    out_info_dict = {}  # 输出的数据
+    url_md5 = hashlib.md5(url.encode()).hexdigest()
+    out_file_path = TEMPORARY_FILES_PATH + url_md5 + '.' + out_file_type
+
+    out_info_dict['url_md5'] = url_md5
+    out_info_dict['out_file_path'] = out_file_path
+    out_info_dict['out_file_type'] = out_file_type
+
+    asyncio.run(runBrowser(url, out_info_dict))
+    return out_info_dict
 
 
 # @app.route('/cookie', methods=['POST', 'get'])
@@ -208,22 +216,17 @@ def get_screenshot():
     网页截屏
     :return:
     """
-    # dirpath = os.path.join(current_app.root_path, 'temporay_files')
-    dirpath = os.path.join(os.path.abspath(os.path.join(current_app.root_path, "..")), 'temporary_files')
-    print(dirpath)
-    statrt_time = time.time()
     url = request.args.get("url")
     print('获取到的url：', url, '校验结果：', validators_url(url))
     if not validators_url(url):
         return jsonify({'msg': '请传入正确的url'})
-    # local_img_path = screenshot(url)['local_img_path']
-    end_time = time.time()
-    # return jsonify({'local_img_path': local_img_path, 'consuming_time': round(end_time - statrt_time, 2)})
-    # return jsonify({'local_img_path': 43, 'consuming_time': round(end_time - statrt_time, 2)})
-    # return send_from_directory('./', 'a')
-    print('准备传递文件')
+
+    out_file_type = SCREENSHOT_FILE_TYPES[0]
+    dirpath = os.path.join(os.path.abspath(os.path.join(current_app.root_path, "..")), 'temporary_files')
+    out_info_dict = get_file(url, out_file_type)
+    filename = out_info_dict['url_md5'] + '.' + out_file_type
     try:
-        return send_from_directory(dirpath, 'a.png', as_attachment=True)  # , as_attachment=True  # 是否作为附件传输，否是直接显示在屏幕上
+        return send_from_directory(dirpath, filename)  # , as_attachment=True  # 是否作为附件传输，否是直接显示在屏幕上
     except Exception as e:
         print(e)
         return str(e)
@@ -235,15 +238,18 @@ def get_pdf():
     网页转pdf
     :return:
     """
-    dirpath = os.path.join(os.path.abspath(os.path.join(current_app.root_path, "..")), 'temporary_files')
     url = request.args.get("url")
-    print('获取到的url：', url)
-    if validators_url(url):
+    print('获取到的url：', url, '校验结果：', validators_url(url))
+    if not validators_url(url):
         return jsonify({'msg': '请传入正确的url'})
-    local_img_path = screenshot(url)['local_img_path']
-    # return jsonify({'local_img_path': local_img_path})
+
+
+    out_file_type = 'pdf'
+    dirpath = os.path.join(os.path.abspath(os.path.join(current_app.root_path, "..")), 'temporary_files')
+    out_info_dict = get_file(url, out_file_type)
+    filename = out_info_dict['url_md5'] + '.' + out_file_type
     try:
-        return send_from_directory(dirpath, 'a.png', as_attachment=True)  # , as_attachment=True  # 是否作为附件传输，否是直接显示在屏幕上
+        return send_from_directory(dirpath, filename)  # , as_attachment=True  # 是否作为附件传输，否是直接显示在屏幕上
     except Exception as e:
         print(e)
         return str(e)

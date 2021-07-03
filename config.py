@@ -66,6 +66,8 @@ MAX_WSE = 2  # 启动几个浏览器
 WSE_DICT = {}  # 存储browserWSEndpoint
 defult_expire_redis = 3600*2  # redis 插入數據的默認有效期
 
+# 允许截图的图片格式 默认使用第一种 png
+SCREENSHOT_FILE_TYPES = ['png', 'jpg', 'webp']
 
 # 代理服务器
 proxyHost = "http-pro.abuyun.com"
