@@ -16,6 +16,7 @@ from flask_login import login_required, login_user, logout_user
 # from application.user.models import User
 from application.utils.utils import flash_errors
 
+# 创建蓝图对象
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
 

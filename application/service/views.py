@@ -53,7 +53,8 @@ async def runBrowser(url, out_info_dict, ua=None, need_proxy=None):
             'autoClose': False,  # 避免长时间运行 内存泄漏
             'ignoreDefaultArgs': ['--enable-automation'],  # 过滤掉列表中的默认参数
             'args': args_launch,
-            'defaultViewport': None  # 网页默认大小  值为None 代表自适应浏览器大小
+            'defaultViewport': None,  # 网页默认大小  值为None 代表自适应浏览器大小
+            'ignoreHTTPSErrors': True,
         })
         print('浏览器创建成功')
         WSE_DICT['wsEndpoint'] = browser.wsEndpoint
@@ -66,7 +67,7 @@ async def runBrowser(url, out_info_dict, ua=None, need_proxy=None):
     # await page.setCacheEnabled()
     if ua:
         await page.setUserAgent(ua)
-    # await page.setViewport({"width": 1000, "height": 900})  # 改变 页面大小
+    await page.setViewport({"width": 1920, "height": 1080})  # 改变页面大小
     if need_proxy:
         await page.authenticate({'username': proxyUser, 'password': proxyPass})
     # await page.setRequestInterception(True)
@@ -75,13 +76,8 @@ async def runBrowser(url, out_info_dict, ua=None, need_proxy=None):
                                      '{ webdriver:{ get: () => undefined } }) }')  # 本页刷新后值不变
 
     try:
-        await page.goto(url, {'waitUntil': 'networkidle0'}),
-        await asyncio.sleep(3)
-        print(897398247)
-        # await page.waitForNavigation({
-        #     'waitUntil': "load",
-        #     'timeout': 5000
-        # })
+        await page.goto(url, {'waitUntil': 'networkidle2'}),
+
         # await asyncio.gather(
         #     await page.goto(url, {'timeout': 60000}),
         #     await page.waitForNavigation({'timeout': 30000})
