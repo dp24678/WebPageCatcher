@@ -101,6 +101,7 @@ async def runBrowser(url, out_info_dict, ua=None, need_proxy=None):
         await page.pdf({'path': out_file_path,
                         'printBackground': True,
                         'displayHeaderFooter': True,
+                        'format': 'tabloid',
                         'landscape': True  # 关键 可以将某些图标渲染出来（个人理解为是否渲染网页背景）
                         # 'margin': {'top': '1in',
                         #            'right': '1in',
